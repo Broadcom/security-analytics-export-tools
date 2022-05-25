@@ -17,9 +17,14 @@ This solution includes three order-dependent steps:
 
 ### Prerequisites
 
-- One or more SA sensors running v8.2.4 or higher.
+- A Linux server or VM to host the RabbitMQ service and consumer(s), with the following installed:
+    - Docker
+    - Python 3.8 or above
+    - the Python requests library (pip3 install requests)
+    - the Python pika library (pip3 install pika). pika is a Python implementation of the AMQP 0-9-1 protocol which is used to communicate with the RabbitMQ service, and requires Python 3.4+.
 - A Splunk Enterprise installation with an HTTP Event Collector (HEC) configuration and associated access token.
-- A Linux server or VM to host the RabbitMQ service and consumer.
+- One or more SA sensors running v8.2.4 or higher.
+
 
 ### Related Documentation
 - [Docker Hub RabbitMQ home](https://hub.docker.com/r/airdock/rabbitmq)
@@ -36,39 +41,15 @@ This solution includes three order-dependent steps:
 
 On the system that will host the RabbitMQ service:
 
-1. Install Python 3.8 or above:
+1. Confirm the system meets the prerequisites listed above.
+
+2. Launch the Docker RabbitMQ container:
 
 ```sh
-yum install python3 (Red Hat), or
-sudo apt install python3.8 (Ubuntu)
+docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 --hostname sa-meta-export rabbitmq:3.9-management
 ```
+Add the -d argument if you want to run as a daemon.
 
-2. Install the Python HTTP requests library required by consumer.py:
-
-```sh
-python3 -m pip install –-user requests (Red Hat), or
-sudo apt install -y python-requests (Ubuntu)
-```
-
-3. Install the Python pika library. pika is a Python implementation of the AMQP 0-9-1 protocol which is used to communicate with the RabbitMQ service, and requires Python 3.4+.
-
-```sh
-python3 -m pip install –-user pika (Red Hat), or
-sudo apt install -y python-pika (Ubuntu)
-```
-
-4. Install Docker:
-
-```sh
-yum install Docker (Red Hat), or
-sudo apt install docker.io (Ubuntu)
-```
-
-5. Launch the Docker RabbitMQ container:
-
-```sh
-docker run -itd --rm --name rabbitmq -p 5672:5672 -p 15672:15672 --hostname sa-meta-export rabbitmq:3.9-management
-```
 The RabbitMQ service listens on two ports and is now ready for configuration by consumer.py:
 
 - Port **5672** for inbound SA alerts and metadata.
@@ -76,7 +57,7 @@ The RabbitMQ service listens on two ports and is now ready for configuration by 
 
     > For more information, see [Docker Hub RabbitMQ home](https://hub.docker.com/r/airdock/rabbitmq).
 
-6. Verify RabbitMQ availability by browsing to the Web console and logging in with the default username 'guest' and password 'guest':
+3. Verify RabbitMQ availability by browsing to the Web console and logging in with the default username 'guest' and password 'guest':
 
 ```sh
 http://<RabbitMQ host IP>:15672/
@@ -84,9 +65,9 @@ http://<RabbitMQ host IP>:15672/
 
 ### Step 2: Launch One or More Consumers
 
-By default, one or more consumers run alongside RabbitMQ and perform two tasks: (1) they initially configure the RabbitMQ virtual host, exchange, and queues for communication with one or more SA sensors, then (2) they begin forwarding all sensor messages to Splunk. The initial configuration is idempotent and may be run multiple times without consequence as you stop and start a consumer.
+By default, one or more consumers run alongside RabbitMQ and perform two tasks: (1) they initially configure the RabbitMQ virtual host, exchange, and queues for communication with one or more SA sensors, then (2) they begin forwarding all SA sensor messages to Splunk. The initial RabbitMQ configuration is idempotent and may be run multiple times without consequence as you stop and start a consumer.
 
-Each consumer can forward messages from only one RabbitMQ exchange (i.e. alerts or meta). So, if you want to forward both alerts and session metadata, you'll have to launch a consumer for each exchange. In *Performance Tuning* below, we discuss launching multiple consumers for a single exchange.
+Each consumer can forward messages from only one RabbitMQ exchange (i.e. alerts or meta). So, if you want to forward both alerts and session metadata, you'll have to launch a consumer for each exchange in separate sessions. In *Performance Tuning* below, we discuss launching multiple consumers for a single exchange.
 
 1. Browse to https://github.com/Broadcom/security-analytics-export-tools
 
@@ -104,7 +85,7 @@ Each consumer can forward messages from only one RabbitMQ exchange (i.e. alerts 
 ```sh
 unzip -d <your desired parent directory> security-analytics-export-tools.zip
 
-cd <parent directory/security-analytics-export-tools
+cd <parent directory>/security-analytics-export-tools
 ```
 3. Use an editor to configure both alerts.ini and/or meta.ini with your Splunk URL and access token.
 		
@@ -126,7 +107,7 @@ The consumers are now waiting for messages from RabbitMQ.
 
 > **Note:** SA sensors cannot be configured for export until after the consumer process or processes have performed their initial configuration of RabbitMQ. 
 
-> **Important:** Although you’re not using Broadcom’s ICDx exchange, you’ll be using SA’s ICDx configuration UIs to configure SA export to your RabbitMQ service. Wherever you see a reference to "ICDx", think “RabbitMQ”.
+> **Important:** Although you’re not using Broadcom’s ICDx exchange, you’ll be using SA’s ICDx menu options to configure SA export to your RabbitMQ service. Wherever you see a reference to "ICDx", think “RabbitMQ”.
 
 SA alert and session metadata export configuration use two separate UIs:
 

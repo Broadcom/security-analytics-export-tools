@@ -115,7 +115,7 @@ class RabbitToSplunk:
             for the HEC data (time, host, source, event).
         '''
 
-        event = {'event':json_data}
+        event = {'event': json_data}
         if 'device_time' in json_data.keys():
             # Time must be in seconds.milliseconds. Device time has milliseconds.microseconds
             event['time'] = int(json_data['device_time'])/1000
@@ -238,8 +238,8 @@ def add_vhost(config):
         reply = requests.put(url, verify = False,
                         auth = HTTPBasicAuth(config['rabbitmq.user'],
                         config['rabbitmq.password']))
-    except Exception as e:
-        print(f'\n*** The connection was refused to RabbitMQ ({url})...aborting. Error: ${e}\n')
+    except Exception as error:
+        print(f'\n*** The connection was refused to RabbitMQ ({url})...aborting. Error: ${error}\n')
         sys.exit(1)
 
     if not reply.ok:
@@ -249,6 +249,7 @@ def add_vhost(config):
 def test_splunk_connection(config):
     #Debug: Uncomment the line below to enable very verbose HTTP debugging
     #add_stderr_logger()
+
     # Disable the warning about connecting without verifying SSL
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -258,16 +259,18 @@ def test_splunk_connection(config):
     try:
         reply = requests.post(url, headers=headers, json=json_health_check, verify=False)
         reply.raise_for_status()
-    except requests.exceptions.HTTPError:
-        print('\n*** An HTTP error occured while connecting to Splunk.')
+    except requests.exceptions.HTTPError as error:
+        print('\n*** An HTTP error occurred while connecting to Splunk.')
         print('*** Verify the config file\'s Splunk URL path and token\n')
+        print(f'{error}\n')
         sys.exit(1)
-    except requests.exceptions.ConnectionError:
-        print('\n*** An HTTP error occured while connecting to Splunk.')
+    except requests.exceptions.ConnectionError as error:
+        print('\n*** An HTTP Connection error occurred while connecting to Splunk.')
         print('*** Verify the config file\'s Splunk URL IP address and port.\n')
+        print(f'{error}\n')
         sys.exit(1)
     except requests.exceptions.RequestException as error:
-        print('\n*** An exception occured while connecting to Splunk.')
+        print('\n*** An exception occurred while connecting to Splunk.')
         print(f'{error}\n')
         sys.exit(1)
 
