@@ -13,6 +13,6 @@ require (
 	github.com/alexflint/go-scalar v1.1.0 // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect
-	golang.org/x/sys v0.0.0-20211110154304-99a53858aa08 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
